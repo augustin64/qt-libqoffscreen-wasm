@@ -23,9 +23,11 @@ jobs:
         run: |
           export Qt_VER=$(echo ${{ github.ref }} | awk -Fv '{print $NF}')
           export EM_VERSION=$(./em-version.sh ${Qt_VER})
+          export ICU_VERSION=$(./icu-version.sh ${Qt_VER})
 
           echo Qt_VER=${Qt_VER} >> "$GITHUB_ENV"
           echo EM_VERSION=${EM_VERSION} >> "$GITHUB_ENV"
+          echo ICU_VERSION=${ICU_VERSION} >> "$GITHUB_ENV"
       - name: Checkout qtbase
         uses: actions/checkout@v6
         with:
@@ -41,9 +43,9 @@ jobs:
       - name: Symlink libICU for Qt
         # This is an *awful* fix, but qmake seems to accept that
         run: |
-          sudo ln -sf $(whereis libicui18n.so | awk '{print $NF}') $(whereis libicui18n.so | awk '{print $NF}').56
-          sudo ln -sf $(whereis libicudata.so | awk '{print $NF}') $(whereis libicudata.so | awk '{print $NF}').56
-          sudo ln -sf $(whereis libicuuc.so | awk '{print $NF}') $(whereis libicuuc.so | awk '{print $NF}').56
+          sudo ln -sf $(whereis libicui18n.so | awk '{print $NF}') $(whereis libicui18n.so | awk '{print $NF}').${{ env.ICU_VERSION }}
+          sudo ln -sf $(whereis libicudata.so | awk '{print $NF}') $(whereis libicudata.so | awk '{print $NF}').${{ env.ICU_VERSION }}
+          sudo ln -sf $(whereis libicuuc.so | awk '{print $NF}') $(whereis libicuuc.so | awk '{print $NF}').${{ env.ICU_VERSION }}
       - uses: actions/cache@v5
         with:
           path: ${{env.EM_CACHE_FOLDER}}
