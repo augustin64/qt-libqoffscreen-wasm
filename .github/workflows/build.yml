@@ -30,7 +30,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: qt/qtbase
-          ref: ${{ env.Qt_VER }}
+          ref: v${{ env.Qt_VER }}
           path: ${{ github.workspace }}/qtbase
       - name: Compatibility step for act
         if: ${{ env.ACT }}
