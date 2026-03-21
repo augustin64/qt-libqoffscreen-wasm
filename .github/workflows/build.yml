@@ -1,0 +1,93 @@
+name: Build libqoffscreen.a
+
+on:
+  push:
+    tags:
+      - v**
+
+env:
+  EM_CACHE_FOLDER: 'emsdk-cache'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+      - name: Set versions
+        run: |
+          export Qt_VER=$(echo ${{ github.ref }} | awk -Fv '{print $NF}')
+          export EM_VERSION=$(./em-version.sh ${Qt_VER})
+
+          echo Qt_VER=${Qt_VER} >> "$GITHUB_ENV"
+          echo EM_VERSION=${EM_VERSION} >> "$GITHUB_ENV"
+      - name: Checkout qtbase
+        uses: actions/checkout@v6
+        with:
+          repository: qt/qtbase
+          ref: ${{ env.Qt_VER }}
+          path: ${{ github.workspace }}/qtbase
+      - name: Compatibility step for act
+        if: ${{ env.ACT }}
+        run: |
+          sudo apt update
+          sudo apt install -y cmake
+          cmake --version
+      - name: Symlink libICU for Qt
+        # This is an *awful* fix, but qmake seems to accept that
+        run: |
+          sudo ln -sf $(whereis libicui18n.so | awk '{print $NF}') $(whereis libicui18n.so | awk '{print $NF}').56
+          sudo ln -sf $(whereis libicudata.so | awk '{print $NF}') $(whereis libicudata.so | awk '{print $NF}').56
+          sudo ln -sf $(whereis libicuuc.so | awk '{print $NF}') $(whereis libicuuc.so | awk '{print $NF}').56
+      - uses: actions/cache@v5
+        with:
+          path: ${{env.EM_CACHE_FOLDER}}
+          key: emsdk-${{ env.EM_VERSION }}-${{ runner.os }}
+
+      - name: Install emscripten
+        uses: Xmader/setup-emsdk@master
+        with:
+          version: ${{ env.EM_VERSION }}
+          actions-cache-folder: ${{ env.EM_CACHE_FOLDER }}
+
+      - name: Install Host Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.Qt_VER }}
+          host: 'linux'
+          target: 'desktop'
+          archives: 'qtbase'
+          dir: ${{ github.workspace }}/host_qt
+          setup-python: true
+          cache: true
+
+      - name: Build
+        run: |
+          cd ${{ github.workspace }}/qtbase
+          patch src/plugins/platforms/CMakeLists.txt ../platforms-CMakeLists.txt.patch
+          ./configure -platform wasm-emscripten -qt-host-path ../host_qt/Qt/${Qt_VER}/gcc_64/ -qpa offscreen -cmake-generator "Unix Makefiles"
+          cd src/plugins/platforms/offscreen
+          make -j all
+
+      - name: Save build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: libqoffscreen
+          path: qtbase/plugins/platforms/libqoffscreen.*
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+            working_directory: qtbase/plugins/platforms
+            files: |
+              libqoffscreen.a
+              libqoffscreen.prl
+            body: |
+              Qt version: ${{ env.Qt_VER }}
+              Emscripten version: ${{ env.EM_VERSION }}
