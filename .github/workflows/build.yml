@@ -40,12 +40,8 @@ jobs:
           sudo apt update
           sudo apt install -y cmake
           cmake --version
-      - name: Symlink libICU for Qt
-        # This is an *awful* fix, but qmake seems to accept that
-        run: |
-          sudo ln -sf $(whereis libicui18n.so | awk '{print $NF}') $(whereis libicui18n.so | awk '{print $NF}').${{ env.ICU_VERSION }}
-          sudo ln -sf $(whereis libicudata.so | awk '{print $NF}') $(whereis libicudata.so | awk '{print $NF}').${{ env.ICU_VERSION }}
-          sudo ln -sf $(whereis libicuuc.so | awk '{print $NF}') $(whereis libicuuc.so | awk '{print $NF}').${{ env.ICU_VERSION }}
+      - name: Install ICU runtime
+        run: sudo ./install-icu.sh ${ICU_VERSION}
       - uses: actions/cache@v5
         with:
           path: ${{env.EM_CACHE_FOLDER}}
@@ -72,6 +68,7 @@ jobs:
         run: |
           cd ${{ github.workspace }}/qtbase
           patch src/plugins/platforms/CMakeLists.txt ../platforms-CMakeLists.txt.patch
+          patch src/plugins/platforms/offscreen/qoffscreenintegration.cpp ../qoffscreenintegration.cpp.patch
           ./configure -platform wasm-emscripten -qt-host-path ../host_qt/Qt/${Qt_VER}/gcc_64/ -qpa offscreen -cmake-generator "Unix Makefiles"
           cd src/plugins/platforms/offscreen
           make -j all

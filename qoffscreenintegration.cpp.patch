@@ -1,0 +1,17 @@
+--- a/src/plugins/platforms/offscreen/qoffscreenintegration.cpp
++++ b/src/plugins/platforms/offscreen/qoffscreenintegration.cpp
+@@ -6,7 +6,13 @@
+ #include "qoffscreencommon.h"
+ 
+ #if defined(Q_OS_UNIX)
+-#include <QtGui/private/qgenericunixeventdispatcher_p.h>
++#include <QtCore/qabstracteventdispatcher.h>
++QT_BEGIN_NAMESPACE
++namespace QtGenericUnixDispatcher {
++    QAbstractEventDispatcher *createUnixEventDispatcher();
++}
++using QtGenericUnixDispatcher::createUnixEventDispatcher;
++QT_END_NAMESPACE
+ #if defined(Q_OS_MAC)
+ #include <qpa/qplatformfontdatabase.h>
+ #include <QtGui/private/qcoretextfontdatabase_p.h>
