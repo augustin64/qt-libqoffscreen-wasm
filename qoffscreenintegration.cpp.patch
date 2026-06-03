@@ -1,15 +1,16 @@
 --- a/src/plugins/platforms/offscreen/qoffscreenintegration.cpp
 +++ b/src/plugins/platforms/offscreen/qoffscreenintegration.cpp
-@@ -5,7 +5,7 @@
- #include "qoffscreenwindow.h"
+@@ -6,7 +6,9 @@
  #include "qoffscreencommon.h"
  
--#if defined(Q_OS_UNIX)
-+#if defined(Q_OS_UNIX)  && !defined(Q_OS_WASM)
+ #if defined(Q_OS_UNIX)
++#if !defined(Q_OS_WASM)
  #include <QtGui/private/qgenericunixeventdispatcher_p.h>
++#endif
  #if defined(Q_OS_MAC)
  #include <qpa/qplatformfontdatabase.h>
-@@ -341,7 +341,7 @@ QPlatformBackingStore *QOffscreenIntegration::createPlatformBackingStore(QWindow
+ #include <QtGui/private/qcoretextfontdatabase_p.h>
+@@ -341,7 +343,7 @@ QPlatformBackingStore *QOffscreenIntegration::createPlatformBackingStore(QWindow
  
  QAbstractEventDispatcher *QOffscreenIntegration::createEventDispatcher() const
  {
